@@ -1,0 +1,12 @@
+import React, { useEffect, useState } from 'react';
+import { api, money } from '../services/api.js';
+import { Loading } from '../components/Layout.jsx';
+
+const prettyStatus=s=>(s||'PLACED').toLowerCase().replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase());
+export default function OrdersPage({ user, navigate }) {
+  const [orders,setOrders]=useState([]);const [loading,setLoading]=useState(true);const [error,setError]=useState('');
+  useEffect(()=>{if(!user){setLoading(false);return}api('/orders').then(setOrders).catch(e=>setError(e.message)).finally(()=>setLoading(false))},[user]);
+  if(!user)return <div className="page-wrap empty-state"><div className="page-kicker">THE GOOD THINGS YOU’VE HAD</div><h1>Your orders <em>live here.</em></h1><p>Sign in to see what’s on its way and all the lovely meals you’ve enjoyed.</p><a href="/login" className="button button-dark" onClick={navigate}>Log in to see orders</a></div>;
+  if(loading)return <Loading label="Finding your orders…"/>;
+  return <div className="page-wrap orders-page"><div className="page-kicker">MADE WITH CARE, JUST FOR YOU</div><div className="listing-title-row"><div><h1>Your good <em>things.</em></h1><p>Every meal tells a little story.</p></div><a className="button button-outline" href="/restaurants" onClick={navigate}>Order something new <span>↗</span></a></div>{error&&<div className="inline-alert">{error}</div>}{orders.length? <div className="orders-list">{orders.map(order=><article className="order-card" key={order.id}><div className="order-card-head"><div><span>ORDER #{order.id} · {new Date(order.createdAt).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})}</span><h2>{order.restaurantName}</h2></div><span className={`status-pill status-${order.status?.toLowerCase().replaceAll('_','-')}`}>{prettyStatus(order.status)}</span></div><div className="order-card-items">{order.items?.map(item=><span key={`${order.id}-${item.id}`}>{item.quantity} × {item.name}</span>)}</div><div className="order-card-foot"><span>Delivering to {order.deliveryAddress}</span><strong>{money(order.totalAmount)}</strong><span className="payment-tag">{order.paymentMethod==='DEMO_ONLINE'?'Demo online':'Cash on delivery'}</span></div></article>)}</div>:<div className="empty-state compact"><span>✳</span><h2>No orders just yet</h2><p>There’s always something lovely on the menu.</p><a href="/restaurants" onClick={navigate} className="button button-dark">Find a meal</a></div>}</div>;
+}
